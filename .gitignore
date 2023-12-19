@@ -1,0 +1,15 @@
+# Confidential files
+**/emails/*.txt
+cache.json
+config.json
+credentials.json
+token.json
+
+# Virtual envs
+**/venv/*
+
+# Misc
+*.DS_Store
+*.log
+*.pyc
+__pycache__/
