@@ -1,0 +1,31 @@
+{
+  "database_details": {
+    "host": "www.yourdbhost12345.com",
+    "db_name": "abg",
+    "user": "trueshot",
+    "password": "somerandomfakedatabasepasswordstring",
+    "port": "5432"
+  },
+  "clients": [
+    {
+      "name": "Venmo",
+      "type": "gmail",
+      "folder": "CC_Venmo",
+      "match_pattern": {
+        "amount": ["Purchase amount $", "Purchase date"],
+        "date": ["Purchase date", "Merchant info"],
+        "vendor": ["Merchant info", "Open the"]
+      }
+    },
+    {
+      "name": "Capital One Venture X",
+      "type": "gmail",
+      "folder": "CC_VentureX",
+      "match_pattern": {
+        "amount": ["of $", "was"],
+        "date": ["that on", ", at"],
+        "vendor": [", at", ", a pending"]
+      }
+    }
+  ]
+}
