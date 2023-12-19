@@ -173,7 +173,6 @@ class GmailClient:
 if __name__ == "__main__":
     # Load config with the desired email clients and folders
     cfg = Config("config.json")
-    cfg.print()
 
     # Initialize client to use Gmail API
     client = GmailClient()
