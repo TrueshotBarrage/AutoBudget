@@ -110,28 +110,15 @@ class GmailClient:
         """
         all_message_ids = []
         for label_id in label_ids:
-            # Check if messages are cached
-            cache_key = f"get_message_ids_{label_id}"
-            cached_messages = self.api_calls_cache.get(cache_key)
-            if cached_messages is None:
-                print(
-                    f"Message IDs for label ID {label_id} not found in cache. Calling Gmail API..."
-                )
-                req = (
-                    self.service.users()
-                    .messages()
-                    .list(userId="me", labelIds=[label_id])
-                )
-                res = req.execute()
+            req = (
+                self.service.users()
+                .messages()
+                .list(userId="me", labelIds=[label_id])
+            )
+            res = req.execute()
 
-                message_ids = res.get("messages", [])
-                message_ids = [message["id"] for message in message_ids]
-
-                self.api_calls_cache.set(cache_key, message_ids)
-
-            else:
-                print(f"Found cached message IDs for label ID {label_id}")
-                message_ids = cached_messages
+            message_ids = res.get("messages", [])
+            message_ids = [message["id"] for message in message_ids]
 
             for message_id in message_ids:
                 self.message_id_to_label_id_memo[message_id] = label_id
