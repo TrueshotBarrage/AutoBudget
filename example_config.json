@@ -12,19 +12,22 @@
       "type": "gmail",
       "folder": "CC_Venmo",
       "match_pattern": {
+        "use_regex": false,
         "amount": ["Purchase amount $", "Purchase date"],
         "date": ["Purchase date", "Merchant info"],
         "vendor": ["Merchant info", "Open the"]
       }
     },
     {
-      "name": "Capital One Venture X",
+      "name": "Amex Blue Cash Preferred",
       "type": "gmail",
-      "folder": "CC_VentureX",
+      "folder": "CC_BlueCashPreferred",
       "match_pattern": {
-        "amount": ["of $", "was"],
-        "date": ["that on", ", at"],
-        "vendor": [", at", ", a pending"]
+        "use_regex": true,
+        "regex": "online\\.(.*)\\*The",
+        "amount": "\\$(.*)\\*",
+        "date": "\\*(.*)$",
+        "vendor": "^(.*)\\$"
       }
     }
   ]

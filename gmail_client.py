@@ -223,17 +223,26 @@ if __name__ == "__main__":
 
         # Retrieve the correct match pattern for the credit card folder name
         match_pattern = cfg.get_match_pattern(folder_name)
+        use_regex = match_pattern["use_regex"]
+        assert type(use_regex) == bool
+        regex_pat = match_pattern["regex"] if use_regex else None
         amount_pat = match_pattern["amount"]
         date_pat = match_pattern["date"]
         vendor_pat = match_pattern["vendor"]
 
+        # Determine if a regex pattern is required to parse the email content
+        if use_regex:
+            ct_trimmed = apply_regex(ct_trimmed, regex_pat)
+
         # Find the transaction attributes within the email using the patterns
         amount = find_matches_from_pattern(
-            amount_pat, ct_trimmed, pat_type="amount"
+            amount_pat, ct_trimmed, pat_type="amount", use_regex=use_regex
         )
-        date = find_matches_from_pattern(date_pat, ct_trimmed, pat_type="date")
+        date = find_matches_from_pattern(
+            date_pat, ct_trimmed, pat_type="date", use_regex=use_regex
+        )
         vendor = find_matches_from_pattern(
-            vendor_pat, ct_trimmed, pat_type="vendor"
+            vendor_pat, ct_trimmed, pat_type="vendor", use_regex=use_regex
         )
         print(f"Date: {date}, Amount: {amount}, Vendor: {vendor}")
 

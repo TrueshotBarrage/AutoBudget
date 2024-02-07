@@ -14,7 +14,7 @@ class Config:
             str,
             Union[
                 Dict[str, str],
-                List[Dict[str, Union[str, Dict[str, List[str]]]]],
+                List[Dict[str, Union[str, Dict[str, Union[List[str], str]]]]],
             ],
         ]
 
@@ -100,15 +100,17 @@ class Config:
             if client["type"] == type
         ]
 
-    def get_match_pattern(self, folder_name) -> Dict[str, List[str]]:
+    def get_match_pattern(
+        self, folder_name
+    ) -> Dict[str, Union[List[str], str]]:
         """
         Returns the match patterns for each attribute needed from the email for
         a given folder.
         Args:
             folder_name (str): Used to find the desired match pattern.
         Returns:
-            Dict[str, List[str]]: The match pattern dict with keys "amount",
-            "date", and "vendor".
+            Dict[str, Union[List[str], str]]: The match pattern dict with keys
+            "use_regex", "regex", "amount", "date", and "vendor".
         Raises:
             IndexError: Raised if the input folder name does not exist.
         """

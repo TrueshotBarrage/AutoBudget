@@ -1,3 +1,4 @@
+import re
 from bs4 import BeautifulSoup
 from dateutil.parser import parse as date_parse, ParserError as DateParserError
 
@@ -26,6 +27,11 @@ def clean_html(html):
     return text
 
 
+def apply_regex(s, reg):
+    regex = re.compile(reg)
+    return regex.search(s).group(1)
+
+
 def assert_date(datestring):
     try:
         date = date_parse(datestring, fuzzy=True)
@@ -34,12 +40,15 @@ def assert_date(datestring):
         return None
 
 
-def find_matches_from_pattern(pat, s, pat_type=None):
-    start_i = s.find(pat[0])
-    end_i = s[start_i:].find(pat[1]) + start_i
-    start_i += len(pat[0])
+def find_matches_from_pattern(pat, s, pat_type=None, use_regex=False):
+    if use_regex:
+        result = apply_regex(s, pat)
+    else:
+        start_i = s.find(pat[0])
+        end_i = s[start_i + len(pat[0]) :].find(pat[1]) + start_i + len(pat[0])
+        start_i += len(pat[0])
 
-    result = s[start_i:end_i].strip()
+        result = s[start_i:end_i].strip()
 
     # If the result string is a date, return in standardized date format
     if pat_type == "date":
