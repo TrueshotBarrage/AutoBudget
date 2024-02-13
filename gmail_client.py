@@ -13,6 +13,8 @@ from utils.cache import Cache
 from utils.db import DatabaseConnector
 from utils.parser import *
 
+logs = []
+
 
 class GmailClient:
     def __init__(self, token_path="token.json"):
@@ -46,7 +48,7 @@ class GmailClient:
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                print("Refreshing token...")
+                logs.append("Refreshing token...")
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
@@ -78,17 +80,21 @@ class GmailClient:
         cache_key = f"get_label_id_{label_name}"
         cached_id = self.api_calls_cache.get(cache_key)
         if cached_id is not None:
-            print(f'Found cached label ID for "{label_name}": "{cached_id}"')
+            logs.append(
+                f'Found cached label ID for "{label_name}": "{cached_id}"'
+            )
             self.label_id_to_folder_name_memo[cached_id] = label_name
             return cached_id
 
-        print(f'Label "{label_name}" not found in cache. Calling Gmail API...')
+        logs.append(
+            f'Label "{label_name}" not found in cache. Calling Gmail API...'
+        )
         req = self.service.users().labels().list(userId="me")
         res = req.execute()
 
         labels = res.get("labels", [])
         if not labels:
-            print("No labels found.")
+            logs.append("No labels found.")
             return None
 
         for label in labels:
@@ -97,7 +103,7 @@ class GmailClient:
                 self.label_id_to_folder_name_memo[label["id"]] = label_name
                 return label["id"]
 
-        print(f'Label "{label_name}" not found.')
+        logs.append(f'Label "{label_name}" not found.')
         return None
 
     def get_message_ids(self, label_ids):
@@ -139,10 +145,10 @@ class GmailClient:
         cache_key = f"get_message_{message_id}"
         cached_message = self.api_calls_cache.get(cache_key)
         if cached_message is not None:
-            print(f'Found cached message for ID "{message_id}"')
+            logs.append(f'Found cached message for ID "{message_id}"')
             return cached_message
 
-        print(
+        logs.append(
             f'Message for ID "{message_id}" not found in cache. Calling Gmail API...'
         )
         req = (
@@ -157,7 +163,9 @@ class GmailClient:
         return res
 
 
-if __name__ == "__main__":
+def main():
+    global logs
+
     # Load config with the desired email clients and folders
     cfg = Config("config.json")
 
@@ -244,7 +252,7 @@ if __name__ == "__main__":
         vendor = find_matches_from_pattern(
             vendor_pat, ct_trimmed, pat_type="vendor", use_regex=use_regex
         )
-        print(f"Date: {date}, Amount: {amount}, Vendor: {vendor}")
+        logs.append(f"Date: {date}, Amount: {amount}, Vendor: {vendor}")
 
         # Store the aggregated message object for database processing
         message_agg = {
@@ -343,3 +351,10 @@ if __name__ == "__main__":
             WHERE id = (%s);
         """
         cursor.execute(query, (res[0], res[1]))
+
+    print(logs)
+    return logs
+
+
+if __name__ == "__main__":
+    main()
