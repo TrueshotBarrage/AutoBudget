@@ -23,3 +23,7 @@ def run_gmail_client():
             log_out += f"{line}\n"
 
     return f"AutoBudget Pipeline Run Successful.\n\n{log_out}"
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port="3000", debug=True)
