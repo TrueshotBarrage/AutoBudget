@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Flask
 
 from gmail_client import main as abg_pipeline
-from utils.fs import _initialize_env_vars_into_files
+import utils.fs as fs
 
 app = Flask(__name__)
 
@@ -15,9 +15,10 @@ def root():
 
 @app.route("/run")
 def run_gmail_client():
-    _initialize_env_vars_into_files()
+    # fs._initialize_env_vars_into_files()
+    env_vars = fs.init_env_vars()
 
-    logs = abg_pipeline()
+    logs = abg_pipeline(env_vars)
 
     log_out = ""
     with open(f"log_{datetime.now().strftime('%m_%d_%Y_%H_%M')}.txt", "w") as f:

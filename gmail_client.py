@@ -17,12 +17,14 @@ logs = []
 
 
 class GmailClient:
-    def __init__(self, token_path="token.json"):
+    def __init__(
+        self, token_path="token.json", token_dict=None, creds_dict=None
+    ):
         self.creds = None
         self.service = None
         self.scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
 
-        self.creds = self._init_creds(token_path)
+        self.creds = self._init_creds(token_path, token_dict, creds_dict)
         self.service = self._open_service()
 
         # Create a cache of previous API calls to avoid unnecessary calls
@@ -32,7 +34,7 @@ class GmailClient:
         self.label_id_to_folder_name_memo = {}
         self.message_id_to_label_id_memo = {}
 
-    def _init_creds(self, token_path):
+    def _init_creds(self, token_path, token_dict, creds_dict):
         """
         Initializes the Gmail client.
         """
@@ -40,20 +42,37 @@ class GmailClient:
         # created automatically when the authorization flow completes for the first
         # time.
         creds = None
-        if os.path.exists(token_path):
+        if token_dict:
+            creds = Credentials(
+                token_dict["token"],
+                refresh_token=token_dict["refresh_token"],
+                token_uri=token_dict["token_uri"],
+                client_id=token_dict["client_id"],
+                client_secret=token_dict["client_secret"],
+                scopes=token_dict["scopes"],
+                expiry=token_dict["expiry"],
+            )
+        elif os.path.exists(token_path):
             creds = Credentials.from_authorized_user_file(
                 token_path, self.scopes
             )
 
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
+            # But first, check if token is merely expired. Just refresh!
             if creds and creds.expired and creds.refresh_token:
                 logs.append("Refreshing token...")
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    "credentials.json", self.scopes
-                )
+                if creds_dict:
+                    flow = InstalledAppFlow.from_client_config(
+                        creds_dict, self.scopes
+                    )
+                else:
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        "credentials.json", self.scopes
+                    )
+
                 creds = flow.run_local_server(port=0)
 
             # Save the credentials for the next run
@@ -163,11 +182,14 @@ class GmailClient:
         return res
 
 
-def main():
+def main(env_vars=None):
     global logs
 
     # Load config with the desired email clients and folders
-    cfg = Config("config.json")
+    cfg = Config(
+        config_path="config.json",
+        config_dict=env_vars["APP_CONFIG"] if env_vars else None,
+    )
 
     # Initialize client to use Gmail API
     client = GmailClient()

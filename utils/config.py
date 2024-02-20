@@ -7,9 +7,14 @@ class Config:
     A class that represents the config file.
     """
 
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path="config.json", config_dict=None):
         self.config_path = config_path
-        self.items = self.load(self.config_path)
+        self.config_dict = config_dict
+        self.items = (
+            config_dict
+            if config_dict
+            else self.load(self.config_path, self.config_dict)
+        )
         self.ConfigType = Dict[
             str,
             Union[
@@ -52,6 +57,10 @@ class Config:
     def load(self, config_path="config.json"):
         """
         Opens the config file and returns the contents as a dictionary.
+        Args:
+            config_path (str): The file path of the config JSON.
+        Returns:
+            dict: The config dict.
         """
         with open(config_path, "r") as config_file:
             config = json.load(config_file)
