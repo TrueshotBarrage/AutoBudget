@@ -182,17 +182,21 @@ class GmailClient:
         return res
 
 
-def main(env_vars=None):
+def main(cfg_dict=None):
     global logs
 
     # Load config with the desired email clients and folders
     cfg = Config(
         config_path="config.json",
-        config_dict=env_vars["APP_CONFIG"] if env_vars else None,
+        config_dict=cfg_dict["APP_CONFIG"] if cfg_dict else None,
     )
 
     # Initialize client to use Gmail API
-    client = GmailClient()
+    client = GmailClient(
+        token_path="token.json",
+        token_dict=cfg_dict["GOOGLE_TOKEN"] if cfg_dict else None,
+        creds_dict=cfg_dict["GOOGLE_CREDENTIALS"] if cfg_dict else None,
+    )
 
     # Get internal folder IDs for each folder
     folders = cfg.get_folders(type="gmail")
