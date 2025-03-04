@@ -29,7 +29,10 @@ def clean_html(html):
 
 def apply_regex(s, reg):
     regex = re.compile(reg)
-    return regex.search(s).group(1)
+    matches = regex.search(s)
+    if matches.group(1):
+        return matches.group(1)
+    return matches.group(2)
 
 
 def assert_date(datestring):
@@ -42,7 +45,9 @@ def assert_date(datestring):
 
 def find_matches_from_pattern(pat, s, pat_type=None, use_regex=False):
     if use_regex:
-        result = apply_regex(s, pat)
+        print(s)
+        print(f"Pat: {pat}")
+        result = apply_regex(s, pat).strip()
     else:
         start_i = s.find(pat[0])
         end_i = s[start_i + len(pat[0]) :].find(pat[1]) + start_i + len(pat[0])
@@ -57,5 +62,16 @@ def find_matches_from_pattern(pat, s, pat_type=None, use_regex=False):
             return date_result[2]
         else:
             raise Exception("Not a date type item")
+
+    # Currency exchange between USD & KRW
+    if pat_type == "amount":
+        # Remove commas from thousands separators
+        result = float(result.replace(",", ""))
+
+        # Handle Korean currency differently
+        if "KRW" in s:
+            usd_to_krw_ratio = 1388.88
+            result /= usd_to_krw_ratio
+            print(f"New amount: {result}")
 
     return result
