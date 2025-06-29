@@ -55,6 +55,11 @@ def find_matches_from_pattern(pat, s, pat_type=None, use_regex=False):
 
         result = s[start_i:end_i].strip()
 
+    # Truncate the length of the vendor name to no more than 40 chars
+    if pat_type == "vendor":
+        if len(result) > 40:
+            result = result[:40]
+
     # If the result string is a date, return in standardized date format
     if pat_type == "date":
         date_result = assert_date(result)
