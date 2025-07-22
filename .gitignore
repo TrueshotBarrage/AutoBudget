@@ -13,3 +13,4 @@ token.json
 *.log
 *.pyc
 __pycache__/
+.idea
