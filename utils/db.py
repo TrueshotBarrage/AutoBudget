@@ -17,7 +17,6 @@ class DatabaseConnector:
         self.port = int(port)
 
         # Establish standard (verbose) logging output
-        logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
 
         self.conn = self._init_db()
@@ -42,7 +41,12 @@ class DatabaseConnector:
         # Execute the SQL seed file
         if self.seed_sql_path:
             cursor = conn.cursor()
-            with open(self.seed_sql_path, "r") as seed_sql:
-                cursor.execute(seed_sql.read())
+            try:
+                with open(self.seed_sql_path, "r") as seed_sql:
+                    cursor.execute(seed_sql.read())
+            except Exception as e:
+                self.logger.error(f"Failed to execute seed SQL: {e}")
+            finally:
+                cursor.close()
 
         return conn
