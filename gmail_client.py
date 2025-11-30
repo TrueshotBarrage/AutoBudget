@@ -4,6 +4,7 @@ import base64
 import binascii
 import logging
 import os.path
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -174,9 +175,42 @@ class GmailClient:
 
         return all_message_ids
 
+    def _fetch_message_with_retry(
+        self, message_id: str, max_retries: int = 5
+    ) -> Optional[Dict]:
+        """
+        Fetches a single message with exponential backoff retry on rate limit errors.
+        """
+        for attempt in range(max_retries):
+            try:
+                response = (
+                    self.service.users()
+                    .messages()
+                    .get(userId="me", id=message_id, format="full")
+                    .execute()
+                )
+                return response
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "rateLimitExceeded" in error_str:
+                    wait_time = (2**attempt) + 1  # 2, 3, 5, 9, 17 seconds
+                    logger.warning(
+                        f"Rate limited fetching {message_id}. "
+                        f"Retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Error fetching message {message_id}: {e}")
+                    return None
+
+        logger.error(
+            f"Failed to fetch message {message_id} after {max_retries} retries"
+        )
+        return None
+
     def get_messages_batch(self, message_ids: List[str]) -> Dict[str, Dict]:
         """
-        Fetches messages in batch, utilizing cache where possible.
+        Fetches messages sequentially with rate limiting and retry logic.
         """
         results = {}
         ids_to_fetch = []
@@ -194,35 +228,21 @@ class GmailClient:
         if not ids_to_fetch:
             return results
 
-        logger.info(
-            f"Fetching {len(ids_to_fetch)} messages from Gmail API (batched)..."
-        )
+        logger.info(f"Fetching {len(ids_to_fetch)} messages from Gmail API...")
 
-        # Helper callback for batch execution
-        def batch_callback(request_id, response, exception):
-            if exception:
-                logger.error(f"Error fetching message {request_id}: {exception}")
-            else:
-                results[request_id] = response
-                self.api_calls_cache.set(f"get_message_{request_id}", response)
+        # Fetch messages one at a time with rate limiting
+        for idx, mid in enumerate(ids_to_fetch):
+            response = self._fetch_message_with_retry(mid)
+            if response:
+                results[mid] = response
+                self.api_calls_cache.set(f"get_message_{mid}", response)
 
-        # Batch request
-        batch: BatchHttpRequest = self.service.new_batch_http_request(
-            callback=batch_callback
-        )
+            # Log progress every 10 messages
+            if (idx + 1) % 10 == 0:
+                logger.info(f"Fetched {idx + 1}/{len(ids_to_fetch)} messages...")
 
-        # Add requests to batch
-        # Note: The batch 'request_id' must be unique. We use the message ID.
-        for mid in ids_to_fetch:
-            batch.add(
-                self.service.users().messages().get(userId="me", id=mid, format="full"),
-                request_id=mid,
-            )
-
-        try:
-            batch.execute()
-        except Exception as e:
-            logger.error(f"Batch execution failed: {e}")
+            # Small delay between requests to avoid rate limiting
+            time.sleep(0.1)
 
         return results
 
