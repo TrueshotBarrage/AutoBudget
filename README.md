@@ -120,8 +120,13 @@ You can automate the data export (e.g., to sync with Google Drive) using a cron 
     Example: Run daily at 9:00 AM.
     _Replace `/path/to/autobudget` with your actual project path._
 
+    This will:
+
+    - Run `gmail_client.py` to fetch and load new transactions into the database.
+    - Then run `export_transactions.py` to export the updated `messages` table to CSV.
+
     ```cron
-    0 9 * * * cd /path/to/autobudget && /path/to/autobudget/venv/bin/python3 export_transactions.py >> /tmp/autobudget_export.log 2>&1
+    0 9 * * * cd /path/to/autobudget && /path/to/autobudget/venv/bin/python3 gmail_client.py >> /tmp/autobudget_gmail.log 2>&1 && /path/to/autobudget/venv/bin/python3 export_transactions.py >> /tmp/autobudget_export.log 2>&1
     ```
 
 ## Project Structure
