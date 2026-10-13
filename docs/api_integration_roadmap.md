@@ -1,118 +1,36 @@
 # API Integration Roadmap
 
-> **Last Updated:** 2026-01-14  
-> **Status:** Waiting for CFPB Section 1033 (April 2026)
+> Last updated: 2026-10-13 · Status: Proposed, not implemented
 
-## Overview
+## Add Plaid, keep Gmail
 
-This document tracks the feasibility of migrating AutoBudget from email scraping to direct bank API access for transaction data.
+- Use Plaid to get transactions straight from supported banks, without parsing emails.
+- Keep Gmail for banks and purchases Plaid doesn't cover.
+- Start small: connect one bank, save its transactions, and export them to CSV.
 
----
+## Check the free Trial first
 
-## Current Approach: Email Scraping
+- Trial is for eligible US/Canada developers and US/Canadian institutions. It won't connect Korean banks.
+- Transactions is included. The limit is 10 bank login connections, called Items; each can include multiple accounts.
+- Deleted and duplicate connections still use up that limit. Test with fake accounts in Sandbox first.
+- Upgrading to a paid plan starts billing for existing Transactions connections. You can't switch back to Trial.
 
-AutoBudget currently parses transaction notification emails from Gmail labels. While functional, this approach has limitations:
-- Requires manual Gmail label/filter setup per card
-- Dependent on email format consistency
-- Slight delay from transaction to email arrival
+Sources: [Trial details](https://support.plaid.com/hc/en-us/articles/39994173227159-What-is-the-Plaid-Trial-plan), [billing rules](https://plaid.com/docs/account/billing/#trial-plans).
 
----
+## Build a small first version
 
-## API Integration Options
+1. Add a simple “Connect bank” page using Plaid Link. Keep bank access tokens private on the server.
+2. Add separate tables for bank connections, accounts, and transactions. Reuse the existing PostgreSQL setup.
+3. Add a sync command using `/transactions/sync`. Save its progress marker together with each completed batch.
+4. Handle changed and removed transactions too. A pending purchase can become a new posted transaction with a different ID.
+5. Export posted transactions with their account, currency, and source. Use Plaid for linked accounts to avoid counting Gmail copies twice.
 
-### 1. Financial Data Aggregators
+The current email tables only support adding records. Plaid needs to update them too. See [Plaid's sync guide](https://plaid.com/docs/transactions/add-to-app/).
 
-Aggregators act as middlemen between your app and financial institutions.
+## Try it, then automate
 
-| Aggregator | Free Tier | Coverage | Notes |
-|------------|-----------|----------|-------|
-| **Plaid** | 100 items (dev) | 10,000+ FIs | Most popular, `/transactions/get` endpoint |
-| **MX** | Contact sales | 48,000 connections | Best data enrichment |
-| **Yodlee** | Contact sales | 20,000+ sources | Enterprise-focused |
-
-### 2. Direct Bank APIs
-
-| Bank | Individual Access | Status |
-|------|------------------|--------|
-| **Amex** | ✅ Yes | Account & Transaction API via [developer.americanexpress.com](https://developer.americanexpress.com) |
-| **Citi** | ⚠️ Enterprise-focused | Portal at [developer.citi.com](https://developer.citi.com) |
-| **Chase** | ❌ Partnership required | FDX member, but contracted access only |
-| **Capital One** | ❌ Enterprise only | DevExchange is company-gated |
-
-### 3. FDX Standard (Emerging)
-
-The Financial Data Exchange (FDX) provides a standardized API format. Major banks (Chase, Wells Fargo, Citizens) are adopting this. Access currently requires partnership agreements.
-
----
-
-## Regulatory Timeline
-
-### CFPB Section 1033 ("Personal Financial Data Rights")
-
-| Date | Milestone |
-|------|-----------|
-| Oct 2024 | Rule finalized |
-| Jan 2025 | FDX recognized as standard-setting body |
-| **Apr 2026** | **Large institutions must comply** |
-| 2027-2028 | Smaller institutions phase in |
-
-**What this means:** Banks must allow customers to share financial data with authorized third-party applications. This will:
-- Improve aggregator connection reliability
-- Potentially open direct API access for individuals
-- Replace legacy screen-scraping with secure OAuth flows
-
----
-
-## Decision: Wait Until April 2026
-
-**Rationale:**
-1. Current email scraping works adequately
-2. Direct bank APIs (except Amex) require enterprise partnerships
-3. Section 1033 compliance will likely improve access options
-4. Plaid remains viable backup if needed sooner
-
-**Revisit Date:** April 2026
-
----
-
-## Alternative Methods (If Needed)
-
-### Manual CSV/OFX Import
-Nearly every bank allows CSV/OFX download. Could add an "Upload" feature.
-
-### LLM-Powered Extraction
-Use AI (Gemini/OpenAI) to parse PDF bank statements into structured JSON. Tools like Unstract or LLMWhisperer specialize in this.
-
-| Method | Effort | Cost | Reliability |
-|--------|--------|------|-------------|
-| Aggregator (Plaid) | Low | Free (dev tier) | High |
-| Direct Bank API | High | Free | Highest |
-| Manual CSV/PDF | Medium | Free | Manual effort |
-
----
-
-## Future Architecture (Post-April 2026)
-
-```mermaid
-flowchart TB
-    subgraph Sources
-        DirectAPI[Direct Bank APIs]
-        Plaid[Plaid Aggregator]
-        Gmail[Gmail Email]
-    end
-    subgraph AutoBudget
-        DirectAPI --> Normalizer
-        Plaid --> Normalizer
-        Gmail --> Parser --> Normalizer
-        Normalizer --> DB[(PostgreSQL)]
-    end
-```
-
----
-
-## References
-
-- [CFPB Section 1033 Rule](https://www.consumerfinance.gov/rules-policy/final-rules/personal-financial-data-rights/)
-- [Financial Data Exchange (FDX)](https://financialdataexchange.org/)
-- [Plaid Documentation](https://plaid.com/docs/)
-- [Amex Developer Portal](https://developer.americanexpress.com)
+- Test updates, removals, and repeat runs in Sandbox.
+- Connect one real bank after confirming eligibility and coverage.
+- Start with manual sync, then add daily cron.
+- Before hosting the connection page, protect its routes and disable Flask debug mode.
+- Leave webhooks, direct bank APIs, and a larger app redesign for later.
